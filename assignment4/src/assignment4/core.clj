@@ -2,10 +2,11 @@
   (:require [assignment4.min-heap :refer :all])
   (:gen-class))
 
-(def large-tree [10 [5 [4 nil nil 2] [8 nil nil 2] 1] [20 nil nil 1] 0])
+(def large-tree ["aing" ["bing" ["cing" nil nil] nil] ["ding" ["e" nil nil] nil]])
 (defn -main
-  "I don't do a whole lot ... yet."
   [& args]
-  (println "Hello, World!")
+  ;(def large-tree (min-heap-insert large-tree "f"))
+  ;(def large-tree (min-heap-insert large-tree 21))
+  ;(def large-tree (min-heap-insert large-tree 22))
   (preorder-traversal large-tree))
 
