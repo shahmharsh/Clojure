@@ -7,4 +7,5 @@
                  [org.clojure/tools.trace "0.7.8"]]
   :main ^:skip-aot assignment4.core
   :target-path "target/%s"
-  :profiles {:uberjar {:aot :all}})
+  :profiles {:uberjar {:aot :all}}
+  :plugins [[com.jakemccrary/lein-test-refresh "0.5.1"]])

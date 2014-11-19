@@ -1,12 +1,13 @@
 (ns assignment4.core
-  (:require [assignment4.min-heap :refer :all])
+  (:require [assignment4.min-heap :as min-heap :refer :all]
+            [clojure.walk :refer :all])
   (:gen-class))
 
-(def large-tree ["aing" ["bing" ["cing" nil nil] nil] ["ding" ["e" nil nil] nil]])
+(def numbers-heap [4 [10 [20 nil nil] nil] [5 [13 nil nil] nil]])
+(def string-heap ["aing" ["bing" ["c" nil nil] nil] ["ding" ["e" nil nil] nil]])
+
 (defn -main
   [& args]
-  ;(def large-tree (min-heap-insert large-tree "f"))
-  ;(def large-tree (min-heap-insert large-tree 21))
-  ;(def large-tree (min-heap-insert large-tree 22))
-  (preorder-traversal large-tree))
-
+  (min-heap/print-preorder numbers-heap)
+  (min-heap/print-preorder string-heap)
+  (min-heap/print-ing-words-preorder string-heap))
