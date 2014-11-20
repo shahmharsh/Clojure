@@ -6,7 +6,8 @@
 (defn -main
   [& args]
   (inventory/add-movie "ddlj" 2 5)
-;  (println (inventory/get-inventory))
   (inventory/add-movie "abc" 0.99 7)
   (println (inventory/get-inventory))
-  (println (inventory/exists-movie? "abc")))
+  (inventory/add-new-copies "abc" 3)
+  (inventory/delete-movie "abc")
+  (println (inventory/get-inventory)))
