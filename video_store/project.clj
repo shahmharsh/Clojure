@@ -9,4 +9,5 @@
                  [clj-time "0.8.0"]]
   :main ^:skip-aot video-store.core
   :target-path "target/%s"
-  :profiles {:uberjar {:aot :all}})
+  :profiles {:uberjar {:aot :all}}
+  :plugins [[com.jakemccrary/lein-test-refresh "0.5.1"]])
