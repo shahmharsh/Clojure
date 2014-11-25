@@ -15,6 +15,9 @@
 (def inventory (atom []))
 (def renters (atom []))
 
+(def inventory-file "data-inventory.clj")
+(def renters-file "data-renters.clj")
+
 (declare get-inventory)
 (declare get-renters)
 (declare exists-movie?)
@@ -24,6 +27,26 @@
 (declare movie-name)
 (declare update-key-in-inventory)
 (declare quantity-with-name)
+
+(defn- write-to-file
+  [file-name data]
+  (with-open [w (clojure.java.io/writer file-name)]
+    (binding [*out* w]
+      (pr data))))
+
+(defn- read-from-file
+  [file-name]
+  (with-open [r (java.io.PushbackReader. (clojure.java.io/reader file-name))]
+    (binding [*read-eval* false]
+      (read r))))
+
+(defn init
+  []
+  (let [inventory-backup (read-from-file inventory-file)
+          renters-backup (read-from-file renters-file)]
+    (reset! inventory inventory-backup)
+    (reset! renters renters-backup)))
+
 
 (defn- vector-count
   "Returns zero based count for the inventory."
@@ -66,15 +89,21 @@
     (let [next-id (get-next-id true)
           new-movie (hash-map :id next-id, :name movie-name, :rental-price rental-price, :quantity quantity)]
       (swap! inventory #(assoc % (inc (vector-count inventory)) new-movie)) ;add new movie to next postion in vector
+      (write-to-file inventory-file @inventory)
       nil)))
+
+(defn- available-movies
+  ""
+  []
+  (filter #(> (:quantity %) 0) @inventory))
 
 (defn get-inventory
   "Returns entire inventory list sorted by ID. Each element of list is a
   map of format {:id ID, :name movie-name, :rental-price price, :quantity quantity}"
   []
-  (sort-by :id @inventory))
+  (sort-by :id (available-movies)))
 
-(defn active-renters
+(defn- active-renters
   ""
   []
   (filter #(not (:returned %)) @renters))
@@ -99,7 +128,8 @@
   negative integer) as input. Throws 'MovieNotFoundException' if movie does not exists. Returns nil."
   [movie-name copies]
   {:pre [(string? movie-name) (pos? copies) (integer? copies)]}
-  (update-key-in-inventory movie-name :quantity #(+ copies %)))
+  (update-key-in-inventory movie-name :quantity #(+ copies %))
+  (write-to-file inventory-file @inventory))
 
 (defn- position-in-inventory
   "Returns the index of movie in inventory. Returns nil if movie is not present."
@@ -122,7 +152,8 @@
   [movie-name]
   {:pre [(string? movie-name)]}
   (if (exists-movie? movie-name)
-    (update-key-in-inventory movie-name :quantity #(- (quantity-with-name movie-name) %))
+    ((update-key-in-inventory movie-name :quantity #(- (quantity-with-name movie-name) %))
+     (write-to-file inventory-file @inventory))
     (throw (Exception. "MovieNotFoundException"))))
 
 (defn change-rental-price
@@ -133,6 +164,7 @@
   (if (exists-movie? movie-name)
     (let [index (position-in-inventory movie-name)]
       (swap! inventory #(assoc-in % [index :rental-price] price))
+      (write-to-file inventory-file @inventory)
       nil)
     (throw (Exception. "MovieNotFoundException"))))
 
@@ -198,6 +230,13 @@
   (update-key-in-inventory movie-name :quantity dec)
   nil)
 
+(defn- inc-quantity
+  "Decrements quantity of movie in inventory by 1. Returns nil."
+  [movie-name]
+  {:pre [(string? movie-name)]}
+  (update-key-in-inventory movie-name :quantity inc)
+  nil)
+
 (defn- can-rent?
   "Returns true if number of copies of movie is >= 1."
   [movie-name]
@@ -217,6 +256,8 @@
           new-renter (hash-map :id next-id, :movie-name movie-name, :renter-name renter-name, :due-date (get-due-date) :returned false)]
       (swap! renters #(assoc % (inc (vector-count renters)) new-renter)) ;add new movie to next postion in vector
       (dec-quantity movie-name)
+      (write-to-file inventory-file @inventory)
+      (write-to-file renters-file @renters)
       nil)
     (throw (Exception. "NotEnoughCopiesException"))))
 
@@ -225,10 +266,11 @@
   [id]
   (let [index (position-in-renters)]
     (if-not (nil? index)
-      (swap! renters #(assoc-in % [index :returned] true))
-      (throw (Exception. "InvalidIDException")))))
-
-
+      ((swap! renters #(assoc-in % [index :returned] true))
+       (inc-quantity (:movie-name (get @renters index)))
+       (write-to-file inventory-file @inventory)
+       (write-to-file renters-file @renters))
+      (throw (Exception. "InvalidIdException")))))
 
 
 
