@@ -3,13 +3,20 @@
             [video-store.inventory :as inventory :refer :all]))
 
 (deftest test-get-next-id
-  (testing "Testing get-next-id"
+  (testing "Testing get-next-id for inventory"
     (#'inventory/clear-inventory)
-    (is (= (#'inventory/get-next-id) 1))
+    (is (= (#'inventory/get-next-id true) 1))
     (inventory/add-movie "test1" 2 5)
-    (is (= (#'inventory/get-next-id) 2))
+    (is (= (#'inventory/get-next-id true) 2))
     (inventory/add-movie "test2" 2 5)
-    (is (= (#'inventory/get-next-id) 3))))
+    (is (= (#'inventory/get-next-id true) 3)))
+  (testing "Testing get-next-id for renters"
+    (#'inventory/clear-renters)
+    (is (= (#'inventory/get-next-id false) 1))
+    (inventory/rent-movie "test1" "name1")
+    (is (= (#'inventory/get-next-id false) 2))
+    (inventory/rent-movie "test2" "name2")
+    (is (= (#'inventory/get-next-id false) 3))))
 
 (deftest test-add-movie
   (testing "Testing add-movie"
@@ -24,7 +31,7 @@
          "test4" 1.99 -3
          "test5" -1.99 3
          "test6" 0 3
-         "test6" 1.99 0)))
+         "test7" 1.99 0)))
 
 (comment (deftest test-get-inventory
   (testing "Testing get-inventory"
@@ -57,14 +64,49 @@
          "test" 0
          "test" -3)))
 
-(deftest test-delete-movie
-  (testing "Testing delete-movie"
+(deftest test-remove-movie
+  (testing "Testing remove-movie"
     (#'inventory/clear-inventory)
-    (is (= (inventory/delete-movie "test") nil))
     (inventory/add-movie "test" 0.99 3)
-    (is (= (inventory/delete-movie "test") nil))
-    (is (thrown? Exception (inventory/movie-id "test"))) ;trying to do any operations on deleted movie will raise an exception
-    (is (thrown? AssertionError (inventory/delete-movie 123)))))
+    (is (= (inventory/remove-movie "test") nil))
+    (is (= (inventory/quantity-with-name "test") 0))
+    (is (thrown? Exception (inventory/remove-movie "test1")))
+    (is (thrown? AssertionError (inventory/remove-movie 123)))))
+
+(deftest test-change-rental-price
+  (testing "Testing change-rental-price"
+    (#'inventory/clear-inventory)
+    (inventory/add-movie "test" 0.99 3)
+    (is (= (inventory/change-rental-price "test" 1.99) nil))
+    (is (= (inventory/price-with-name "test") 1.99))))
+
+(deftest test-can-rent?
+  (testing "Testing can-rent?"
+    (#'inventory/clear-inventory)
+    (inventory/add-movie "test1" 0.99 3)
+    (inventory/add-movie "test2" 0.99 1)
+    (#'inventory/dec-quantity "test2")
+    (are [movie-name output] (= (#'inventory/can-rent? movie-name) output)
+         "test1" true
+         "test2" false)))
+
+(deftest test-rent-movie
+  (testing "Testing rent-movie"
+    (#'inventory/clear-inventory)
+    (inventory/add-movie "test1" 0.99 3)
+    (inventory/add-movie "test2" 0.99 2)
+    (#'inventory/clear-renters)
+    (are [movie-name renter-name] (= (inventory/rent-movie movie-name renter-name) nil)
+         "test1" "name1"
+         "test2" "name2"
+         "test2" "name3")
+    (is (thrown? Exception (inventory/rent-movie "test2" "name3"))) ;not enough copies of movie available
+    (is (thrown? Exception (inventory/rent-movie "test3" "name4")))) ;Movie not found in inventory exception
+  (testing "Testing rent-movie with illegal arguments."
+    (are [movie-name renter-name] (thrown? AssertionError (inventory/rent-movie movie-name renter-name))
+         123 "name5"
+         "test2" 123)))
+
 
 
 
