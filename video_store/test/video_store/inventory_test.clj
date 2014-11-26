@@ -23,7 +23,8 @@
     (#'inventory/clear-inventory)
     (are [movie-name price quantity] (= (inventory/add-movie movie-name price quantity) nil)
          "test1" 0.99 5
-         "test2" 1.99 5))
+         "test2" 1.99 5
+         "test2" 2.99 5))
   (testing "Testing add-movie with illegal arguments."
     (are [movie-name price quantity] (thrown? AssertionError (inventory/add-movie movie-name price quantity))
          123 1 5
@@ -33,15 +34,15 @@
          "test6" 0 3
          "test7" 1.99 0)))
 
-(comment (deftest test-get-inventory
+(deftest test-get-inventory
   (testing "Testing get-inventory"
     (#'inventory/clear-inventory)
-    (is (= inventory/get-inventory '()))
+    (is (= (inventory/get-inventory) []))
     (inventory/add-movie "test1" 0.99 3)
-    (is (= inventory/get-inventory '({:id 1, :name "test1", :rental-price 0.99, :quantity 3})))
+    (is (= (inventory/get-inventory) [{:id 1, :name "test1", :rental-price 0.99, :quantity 3}]))
     (inventory/add-movie "test2" 1.49 5)
-    (is (= inventory/get-inventory '({:id 1, :name "test1", :rental-price 0.99, :quantity 3} {:id 2, :name "test2", :rental-price 1.49, :quantity 5})))
-    (inventory/add-movie "test3" 2.49 6))))
+    (is (= (inventory/get-inventory) [{:id 1, :name "test1", :rental-price 0.99, :quantity 3} {:id 2, :name "test2", :rental-price 1.49, :quantity 5}]))
+    (inventory/add-movie "test3" 2.49 6)))
 
 (deftest test-exists-movie?
   (testing "Testing exists-movie?"

@@ -2,7 +2,8 @@
   (:gen-class)
   (:require [me.raynes.fs :as fs]
             [clj-time.core :as t]
-            [clj-time.local :as l]))
+            [clj-time.local :as l]
+            [clj-time.format :as f]))
 
 ; inventory is a vector, where each element in the vector is a map.
 ; The map contains movie information and is of the format {:id ID, :name movie-name, :rental-price price, :quantity quantity}
@@ -27,6 +28,7 @@
 (declare movie-name)
 (declare update-key-in-inventory)
 (declare quantity-with-name)
+(declare change-rental-price)
 
 (defn- write-to-file
   [file-name data]
@@ -46,7 +48,6 @@
           renters-backup (read-from-file renters-file)]
     (reset! inventory inventory-backup)
     (reset! renters renters-backup)))
-
 
 (defn- vector-count
   "Returns zero based count for the inventory."
@@ -80,12 +81,14 @@
 
 (defn add-movie
   "Adds movie to inventory. Expects movie-name as string, rental-price (non negative number) and
-  quantity (non negative integer) as input. If movie is already present then adds new copies to
-  existing inventory. Returns nil."
+  quantity (non negative integer) as input. If movie is already present then adds copies to movie
+  and sets price to passed in price. Returns nil."
   [movie-name rental-price quantity]
   {:pre [(string? movie-name) (number? rental-price) (pos? rental-price) (integer? quantity) (pos? quantity)]}
   (if (exists-movie? movie-name)
-    (throw (Exception. "MovieAlreadyExistsException"))
+    nil
+    ;((change-rental-price movie-name rental-price)
+    ; (add-new-copies movie-name quantity))
     (let [next-id (get-next-id true)
           new-movie (hash-map :id next-id, :name movie-name, :rental-price rental-price, :quantity quantity)]
       (swap! inventory #(assoc % (inc (vector-count inventory)) new-movie)) ;add new movie to next postion in vector
@@ -93,25 +96,23 @@
       nil)))
 
 (defn- available-movies
-  ""
   []
   (filter #(> (:quantity %) 0) @inventory))
 
 (defn get-inventory
-  "Returns entire inventory list sorted by ID. Each element of list is a
+  "Returns the available movies in a vector sorted by ID. Each element of vector is a
   map of format {:id ID, :name movie-name, :rental-price price, :quantity quantity}"
   []
-  (sort-by :id (available-movies)))
+  (into [] (sort-by :id (available-movies))))
 
 (defn- active-renters
-  ""
   []
   (filter #(not (:returned %)) @renters))
 
 (defn get-renters
-  ""
+  "Returns a vector of renters who have not returned the movie. Each element of"
   []
-  (sort-by :id (active-renters)))
+  (into [] (sort-by :id (active-renters))))
 
 (defn- key-not-equal-to-value?
   "Returns true if value is equal to the key value in map movie"
@@ -140,33 +141,34 @@
       index)))
 
 (defn- position-in-renters
-  ""
+  "Returns position of parameter id in renters vector"
   [id]
   (let [index (count (take-while #(key-not-equal-to-value? :id id %) @renters))
         total (vector-count renters)]
     (when (<= index total)
       index)))
 
+(defn- reset-key-in-inventory
+  [movie-name key value]
+  (if (exists-movie? movie-name)
+    (let [index (position-in-inventory movie-name)]
+      (swap! inventory #(assoc-in % [index key] value))
+      (write-to-file inventory-file @inventory)
+      nil)
+    (throw (Exception. "MovieNotFoundException"))))
+
 (defn remove-movie
   "Removes movie from inventory ie sets quantity to 0. Expects movie name as string. Returns nil."
   [movie-name]
   {:pre [(string? movie-name)]}
-  (if (exists-movie? movie-name)
-    ((update-key-in-inventory movie-name :quantity #(- (quantity-with-name movie-name) %))
-     (write-to-file inventory-file @inventory))
-    (throw (Exception. "MovieNotFoundException"))))
+  (reset-key-in-inventory movie-name :quantity 0))
 
 (defn change-rental-price
   "Updates movie with new price. Throws 'MovieNotFoundException' if movie does
   not exists. Returns nil."
   [movie-name price]
   {:pre [(string? movie-name) (pos? price)]}
-  (if (exists-movie? movie-name)
-    (let [index (position-in-inventory movie-name)]
-      (swap! inventory #(assoc-in % [index :rental-price] price))
-      (write-to-file inventory-file @inventory)
-      nil)
-    (throw (Exception. "MovieNotFoundException"))))
+  (reset-key-in-inventory movie-name :rental-price price))
 
 (defn- get-value-with-name
   [movie-name key]
@@ -242,13 +244,17 @@
   [movie-name]
   (not (zero? (quantity-with-name movie-name))))
 
+(def formatter (f/formatter "MM-dd-YYYY"))
+
 (defn- get-due-date
-  ""
+  "Returns due date = current date + 2 weeks formatted as MM-dd-YYYY"
   []
-  (t/plus (l/local-now) (t/weeks 2)))
+  (f/unparse formatter  (t/plus (l/local-now) (t/weeks 2))))
 
 (defn rent-movie
-  ""
+  "Records renter-name along with movie and decrements from a copy of movie from
+  inventory. Throws MovieNotFoundException if movie is not in inventory and NotEnoughCopiesException
+  if not enough movie copies available. Returns nil."
   [movie-name renter-name]
   {:pre [(string? movie-name) (string? renter-name)]}
   (if (can-rent? movie-name)
@@ -262,7 +268,7 @@
     (throw (Exception. "NotEnoughCopiesException"))))
 
 (defn return-movie
-  ""
+  "Records that the movie is returned. Throws InvalidIdException if id is not found. Returns nil."
   [id]
   (let [index (position-in-renters)]
     (if-not (nil? index)
