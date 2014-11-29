@@ -7,12 +7,4 @@
 (defn -main
   [& args]
   (inventory/init)
-  ;(inventory/add-movie "ddlj" 2 5)
-  ;(inventory/add-movie "abc" 0.99 7)
-  ;(println (inventory/get-inventory))
-  ;(inventory/add-new-copies "abc" 3)
-  ;(inventory/change-rental-price "abc" 1.49)
-  ;(inventory/remove-movie "abc")
-  ;(println (inventory/movie-name 2))
-  ;(println (inventory/price-with-id 1)))
   (gui/init-frame))

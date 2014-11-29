@@ -1,1 +1,1 @@
-[{:movie-name "test1", :returned false, :renter-name "name1", :id 1, :due-date "12-10-2014"} {:movie-name "test2", :returned false, :renter-name "name2", :id 2, :due-date "12-10-2014"} {:movie-name "test2", :returned false, :renter-name "name3", :id 3, :due-date "12-10-2014"}]
+[{:movie-name "test1", :returned false, :renter-name "name1", :id 1, :due-date "12-13-2014"} {:movie-name "test2", :returned false, :renter-name "name2", :id 2, :due-date "12-13-2014"} {:movie-name "test2", :returned false, :renter-name "name3", :id 3, :due-date "12-13-2014"}]

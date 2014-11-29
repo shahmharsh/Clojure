@@ -1,3 +1,5 @@
+; Tests are incomplete
+
 (ns video-store.inventory-test
   (:require [clojure.test :refer :all]
             [video-store.inventory :as inventory :refer :all]))
@@ -70,7 +72,7 @@
     (#'inventory/clear-inventory)
     (inventory/add-movie "test" 0.99 3)
     (is (= (inventory/remove-movie "test") nil))
-    (is (= (inventory/quantity-with-name "test") 0))
+    (is (= (inventory/quantity-with-name "test") 2))
     (is (thrown? Exception (inventory/remove-movie "test1")))
     (is (thrown? AssertionError (inventory/remove-movie 123)))))
 
@@ -97,10 +99,10 @@
     (inventory/add-movie "test1" 0.99 3)
     (inventory/add-movie "test2" 0.99 2)
     (#'inventory/clear-renters)
-    (are [movie-name renter-name] (= (inventory/rent-movie movie-name renter-name) nil)
-         "test1" "name1"
-         "test2" "name2"
-         "test2" "name3")
+    (are [movie-name renter-name id] (= (inventory/rent-movie movie-name renter-name) id)
+         "test1" "name1" 1
+         "test2" "name2" 2
+         "test2" "name3" 3)
     (is (thrown? Exception (inventory/rent-movie "test2" "name3"))) ;not enough copies of movie available
     (is (thrown? Exception (inventory/rent-movie "test3" "name4")))) ;Movie not found in inventory exception
   (testing "Testing rent-movie with illegal arguments."
