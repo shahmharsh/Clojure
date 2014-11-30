@@ -25,18 +25,18 @@
 
 (defn- add-new-movie-handler
   [event]
-  (let [movie-name (seesaw/input "Enter movie name:")
-        price (seesaw/input "Enter movie rental price:")
-        copies (seesaw/input "Enter copies:"
+  (let [root (seesaw/to-root event)
+        movie-name (seesaw/input root "Enter movie name:")
+        price (seesaw/input root "Enter movie rental price:")
+        copies (seesaw/input root "Enter copies:"
                              :value 1)
-        root (seesaw/to-root event)
         inventory-table (seesaw/select root [:#inventory-table])]
     (if-not (or (nil? movie-name) (nil? price) (nil? copies))
       (try
         (inventory/add-movie movie-name (Double. price) (Integer. copies))
         (seesaw.table/insert-at! inventory-table 0 (inventory/get-movie movie-name))
-        (catch Exception e (seesaw/alert "Invalid Input")))
-      (seesaw/alert "Invalid Input"))))
+        (catch Exception e (seesaw/alert root "Invalid Input")))
+      (seesaw/alert root "Invalid Input"))))
 
 (defn- get-toolbar
   []
@@ -81,17 +81,18 @@
 
 (defn- add-copies-handler
   [event]
-  (let [copies (seesaw/input "Enter number of copies:"
-                             :value 1)
-        root (seesaw/to-root event)
+  (let [root (seesaw/to-root event)
         inventory-table (seesaw/select root [:#inventory-table])
         selected-row (seesaw/selection inventory-table)]
-    (when-not (or (nil? copies) (nil? selected-row))
+    (when-not (nil? selected-row)
       (try
-        (let [movie-name (key-value-in-row :name inventory-table selected-row)]
-          (inventory/add-new-copies movie-name (Integer. copies))
-          (seesaw.table/update-at! inventory-table selected-row (inventory/get-movie movie-name)))
-        (catch Exception e (seesaw/alert "Invalid Copies"))))))
+        (let [copies (seesaw/input root "Enter number of copies:"
+                             :value 1)
+              movie-name (key-value-in-row :name inventory-table selected-row)]
+          (when-not (nil? copies)
+            (inventory/add-new-copies movie-name (Integer. copies))
+            (seesaw.table/update-at! inventory-table selected-row (inventory/get-movie movie-name))))
+        (catch Exception e (seesaw/alert root "Invalid Copies"))))))
 
 (defn- rent-movie-handler
   [event]
@@ -100,15 +101,17 @@
         renter-table (seesaw/select root [:#renter-table])
         selected-row (seesaw/selection inventory-table)]
     (if (nil? selected-row)
-      (seesaw/alert "Select movie from table")
-      (let [renter-name (seesaw/input "Enter Renter Name")
-            movie-name (key-value-in-row :name inventory-table selected-row)
-            renter-id (inventory/rent-movie movie-name renter-name)
-            renter-record (inventory/get-renter-by-id renter-id)]
-        (when-not (nil? renter-record)
-          (do
-            (seesaw.table/insert-at! renter-table 0 renter-record)
-            (seesaw.table/update-at! inventory-table selected-row (inventory/get-movie movie-name))))))))
+      (seesaw/alert root "Select movie from table")
+      (try
+        (let [renter-name (seesaw/input root "Enter Renter Name")
+              movie-name (key-value-in-row :name inventory-table selected-row)
+              renter-id (inventory/rent-movie movie-name renter-name)
+              renter-record (inventory/get-renter-by-id renter-id)]
+          (when-not (nil? renter-record)
+            (do
+              (seesaw.table/insert-at! renter-table 0 renter-record)
+              (seesaw.table/update-at! inventory-table selected-row (inventory/get-movie movie-name)))))
+        (catch Exception e (seesaw/alert root "Movie not currently available to rent"))))))
 
 (defn- get-inventory-buttons
   []

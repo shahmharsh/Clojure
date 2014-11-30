@@ -1,1 +1,1 @@
-[{:name "test", :rental-price 0.99, :id 1, :quantity 7}]
+[{:name "test", :rental-price 0.99, :id 1, :quantity 7} {:name "test1", :rental-price 1.99, :id 2, :quantity 0}]

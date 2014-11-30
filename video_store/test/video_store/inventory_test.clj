@@ -1,4 +1,4 @@
-; Tests are incomplete
+; Tests cases are incomplete
 
 (ns video-store.inventory-test
   (:require [clojure.test :refer :all]
